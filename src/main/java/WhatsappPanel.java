@@ -41,8 +41,8 @@ public class WhatsappPanel extends JPanel {
     }
 
     public void login (String phone,String message){
-            System.setProperty("webdriver.chrome.driver","C:\\Users\\USER\\Desktop\\chromedriver.exe");
-            this.driver = new ChromeDriver();
+        System.setProperty("webdriver.chrome.driver","C:\\Users\\USER\\Documents\\chromedriver.exe");
+        this.driver = new ChromeDriver();
             this.driver.get("https://web.whatsapp.com/send?phone="+phone);
             this.driver.manage().window().maximize();
         Thread t = new Thread(() -> {
