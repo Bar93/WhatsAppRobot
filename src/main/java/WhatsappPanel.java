@@ -13,6 +13,8 @@ public class WhatsappPanel extends JPanel {
     private JLabel statusLabel;
     private JTextField phoneLabel;
     private JTextField messageLabel;
+    private JComboBox<String> areaCodePhone;
+
 
 
 
@@ -24,13 +26,16 @@ public class WhatsappPanel extends JPanel {
         this.statusLabel.setBackground(Color.WHITE);
         this.add(this.statusLabel);
         this.phoneLabel = new JTextField("enter phone\n");
-        this.phoneLabel.setBounds(10,150,100,100);
+        this.phoneLabel.setBounds(50,150,100,100);
         this.phoneLabel.setBackground(Color.GREEN);
         this.messageLabel = new JTextField("enter message\n");
-        this.messageLabel.setBounds(120,150,100,100);
+        this.messageLabel.setBounds(160,150,100,100);
         this.messageLabel.setBackground(Color.GREEN);
         this.add(this.phoneLabel);
         this.add(this.messageLabel);
+        this.areaCodePhone = new JComboBox<>(Constant.CODE_PHONE);
+        this.areaCodePhone.setBounds(10,150,30,50);
+        this.add(areaCodePhone);
         JButton button = new JButton("submit");
         button.setBounds(80, 300, 100, 50);
         this.add(button);
@@ -47,20 +52,28 @@ public class WhatsappPanel extends JPanel {
             this.driver.manage().window().maximize();
         Thread t = new Thread(() -> {
             WebElement checkLogin =null;
+            WebElement checkIfPhoneExist = null;
             boolean success = false;
             while (success==false) {
                 try {
                     checkLogin = this.driver.findElement(By.className("_2vbn4"));
+                    checkIfPhoneExist = this.driver.findElement(By.className("_3J6wB")); // class of popUp:'invalid number'
+                    if (checkIfPhoneExist != null) {
+                        this.statusLabel.setText("the phone not in the system");
+                        this.driver.close();
+                        break;
+                    }
+
                 }catch (Exception e1){
                     e1.printStackTrace();
                 }
-                if (checkLogin!=null) {
+                if (checkLogin!=null && checkIfPhoneExist == null) {
                     success=true;
                     this.statusLabel.setText("login");
                     pastMessage(message);
                 }
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -70,27 +83,31 @@ public class WhatsappPanel extends JPanel {
     }
 
     public void getPhoneAndMessage(){
-            String phone = this.phoneLabel.getText();
+            String phone = "972"+this.areaCodePhone.getSelectedItem() + this.phoneLabel.getText();
             String message = this.messageLabel.getText();
-            if (checkPhone(phone)&&checkMessage(message)){
+            if (checkTextPhone(phone) && checkTextOfMessage(message)){
                 login(phone,message);
             }
         }
 
-    public boolean checkPhone (String phone){
+    public boolean checkTextPhone(String phone){
     boolean ans = true;
     int index = 0;
-    while (index<phone.length()){
-        if (Character.isLetter(phone.charAt(index))){
-            ans = false;
-            break;
+    if (phone.length()!=12)
+        ans = false;
+    else {
+        while (index < phone.length()) {
+            if (Character.isLetter(phone.charAt(index))) {
+                ans = false;
+                break;
+            }
+            index++;
         }
-        index++;
     }
     return ans;
     }
 
-    public boolean checkMessage (String message){
+    public boolean checkTextOfMessage(String message){
         if (message!=null){
             return true;
         }
@@ -99,13 +116,15 @@ public class WhatsappPanel extends JPanel {
     }
 
     public boolean pastMessage (String message){
-       WebElement newMessage =this.driver.findElement(By.xpath("//div[@title=\"Type a message\"]"));
-       newMessage.click();
-       newMessage.clear();
-       newMessage.sendKeys(message);
-       this.driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
-       newMessage.sendKeys(Keys.ENTER);
-       return true;
+            WebElement newMessage = this.driver.findElement(By.xpath("//div[@title=\"Type a message\"]"));
+            newMessage.click();
+            newMessage.clear();
+            newMessage.sendKeys(message);
+            this.driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
+            newMessage.sendKeys(Keys.ENTER);
+
+    return true;
     }
+
 }
 
