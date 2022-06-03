@@ -5,12 +5,15 @@ import org.openqa.selenium.chrome.ChromeDriver;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class WhatsappPanel extends JPanel {
 
     private ChromeDriver driver;
-    private JLabel statusLabel;
+    private JLabel loginStatus;
+    private JLabel messageStatus;
+    private JLabel newMessage;
     private JTextField phoneLabel;
     private JTextField messageLabel;
     private JComboBox<String> areaCodePhone;
@@ -21,10 +24,18 @@ public class WhatsappPanel extends JPanel {
     public WhatsappPanel() {
         this.setLayout(null);
         this.setBounds(0, 0, Constant.WINDOW_WIDTH, Constant.WINDOW_HEIGHT);
-        this.statusLabel = new JLabel("user interface\n");
-        this.statusLabel.setBounds(80,10,200,100);
-        this.statusLabel.setBackground(Color.WHITE);
-        this.add(this.statusLabel);
+        this.loginStatus = new JLabel("login status\n");
+        this.loginStatus.setBounds(80,10,200,100);
+        this.loginStatus.setBackground(Color.WHITE);
+        this.add(this.loginStatus);
+        this.messageStatus = new JLabel("message status\n");
+        this.messageStatus.setBounds(300,10,100,100);
+        this.messageStatus.setBackground(Color.WHITE);
+        this.add(this.messageStatus);
+        this.newMessage = new JLabel("incoming message:\n");
+        this.newMessage.setBounds(550,10,100,100);
+        this.newMessage.setBackground(Color.WHITE);
+        this.add(this.newMessage);
         this.phoneLabel = new JTextField("enter phone\n");
         this.phoneLabel.setBounds(50,150,100,100);
         this.phoneLabel.setBackground(Color.GREEN);
@@ -52,25 +63,18 @@ public class WhatsappPanel extends JPanel {
             this.driver.manage().window().maximize();
         Thread t = new Thread(() -> {
             WebElement checkLogin =null;
-            WebElement checkIfPhoneExist = null;
             boolean success = false;
             while (success==false) {
                 try {
                     checkLogin = this.driver.findElement(By.className("_2vbn4"));
-                    checkIfPhoneExist = this.driver.findElement(By.className("_3J6wB")); // class of popUp:'invalid number'
-                    if (checkIfPhoneExist != null) {
-                        this.statusLabel.setText("the phone not in the system");
-                        this.driver.close();
-                        break;
-                    }
-
                 }catch (Exception e1){
                     e1.printStackTrace();
                 }
-                if (checkLogin!=null && checkIfPhoneExist == null) {
-                    success=true;
-                    this.statusLabel.setText("login");
-                    pastMessage(message);
+                if (checkLogin!=null) {
+                    this.loginStatus.setText("login");
+                        success=true;
+                        checkIfPhoneExist(message);
+
                 }
                 try {
                     Thread.sleep(1000);
@@ -81,6 +85,38 @@ public class WhatsappPanel extends JPanel {
         });
         t.start();
     }
+
+    public void checkIfPhoneExist(String message){
+        String checkIfPhoneExist = null;
+        boolean phoneExist = true;
+            try {
+                checkIfPhoneExist = this.driver.findElement(By.className("_3J6wB")).getText(); // class of popUp:'invalid number'
+            }catch (Exception e1){
+                e1.printStackTrace();
+            }
+            while (checkIfPhoneExist!=null) {
+                    if (checkIfPhoneExist.contains("invalid")) {
+                        this.messageStatus.setText("invalid number");
+                        phoneExist = false;
+                        this.driver.close();
+                        break;
+                    }
+                    else {
+                        checkIfPhoneExist = null;
+                    }
+                try {
+                    checkIfPhoneExist = this.driver.findElement(By.className("_3J6wB")).getText(); // class of popUp:'invalid number'
+                }catch (Exception e1){
+                    e1.printStackTrace();
+                }
+                }
+            if (phoneExist){
+                pastMessage(message);
+            }
+
+            }
+
+
 
     public void getPhoneAndMessage(){
             String phone = "972"+this.areaCodePhone.getSelectedItem() + this.phoneLabel.getText();
@@ -112,19 +148,61 @@ public class WhatsappPanel extends JPanel {
             return true;
         }
         else return false;
-
     }
 
-    public boolean pastMessage (String message){
+    public void pastMessage (String message){
+        this.driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
             WebElement newMessage = this.driver.findElement(By.xpath("//div[@title=\"Type a message\"]"));
             newMessage.click();
             newMessage.clear();
             newMessage.sendKeys(message);
             this.driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
             newMessage.sendKeys(Keys.ENTER);
-
-    return true;
+            checkLastMessage();
     }
+
+    public void checkMyMessageStatus(){
+                try {
+                    List<WebElement> messagesStatus = this.driver.findElements(By.xpath("//div[@class=\"do8e0lj9 l7jjieqr k6y3xtnu\"]"));
+                    if (messagesStatus.get(messagesStatus.size()-1).findElement(By.xpath("//span[@aria-label=\" Sent \"]")).isDisplayed()){
+                        this.messageStatus.setText("Sent");
+                    }
+                   if (messagesStatus.get(messagesStatus.size()-1).findElement(By.xpath("//span[@aria-label=\" Delivered \"]")).isDisplayed()){
+                       this.messageStatus.setText("Delivered");
+                   }
+                    if (messagesStatus.get(messagesStatus.size()-1).findElement(By.xpath("//span[@aria-label=\" Read \"]")).isDisplayed()){
+                        this.messageStatus.setText("Read");
+                    }
+                }
+                catch (Exception e1){
+                    e1.printStackTrace();
+                }
+    }
+
+    public void checkLastMessage (){
+        Thread t = new Thread(() -> {
+            boolean newMassage = false;
+            while (newMassage==false){
+                checkMyMessageStatus();
+                List<WebElement> messagesList = this.driver.findElements(By.xpath("//div[@class=\"_1Gy50\"]"));
+                String lastMessage =messagesList.get(messagesList.size()-1).getText();
+                if (!lastMessage.equals(this.messageLabel.getText())){
+                    System.out.println("new message");
+                    this.newMessage.setText("incoming message: " + lastMessage);
+                    newMassage = true;
+                }
+
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    });
+        t.start();
+
+    }
+
 
 }
 
