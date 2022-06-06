@@ -228,12 +228,11 @@ public class WhatsappPanel extends JPanel {
         else {
             report = " From: " + "972-"+this.areaCodePhone.getSelectedItem()+"-" + this.phoneLabel.getText() + "\n Message: " + this.messageLabel.getText() + "\n Comment: " + this.newMessage.getText();
         }
-
             writeToTextFile(report, Constant.FILE_ADDRESS);
             System.out.println(readFromTextFile(Constant.FILE_ADDRESS));
     }
 
-    public static void writeToTextFile(String report,String path){
+    public void writeToTextFile(String report,String path){
         try {
             FileOutputStream file = new FileOutputStream(path);
             ObjectOutputStream writer = new ObjectOutputStream(file);
@@ -246,7 +245,7 @@ public class WhatsappPanel extends JPanel {
 
     }
 
-    public static String readFromTextFile (String path){
+    public String readFromTextFile (String path){
         String report = "";
         try {
             FileInputStream file = new FileInputStream(path);
